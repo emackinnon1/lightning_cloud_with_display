@@ -120,11 +120,11 @@ class Menu():
         display.update()
             
 menu = Menu()
-# clear()
+
 menu.render()
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect("Who pooped in the pool", "Sonoffinan1!")
+wlan.connect("WIFI_NETWORK_NAME", "{WIFI_PASSWORD}")
 
 while not wlan.isconnected():
     print("Connecting...")
@@ -139,8 +139,8 @@ lock = True
 next_ping_time = 0
 
 mqtt_server = '10.0.0.91'
-mqtt_user = 'mqtt_user'
-mqtt_password = 'Sonoffinan'
+mqtt_user = '{MQTT_USER}'
+mqtt_password = '{MQTT_PASSWORD}'
 client_id = 'lightning_pico_w'
 
 mqtt_client = MQTTClient(
@@ -199,25 +199,26 @@ def check():
     global next_ping_time
     global mqtt_con_flag
     global pingresp_rcv_flag
+    # play with the logic here if you start having problems with MQTT connection
     if (time.time() >= next_ping_time):
         ping()
-#         if not pingresp_rcv_flag:
-#             mqtt_con_flag = False
-#             print("We have not received PINGRESP so broker disconnected")
-#         else:
-#             print("MQTT ping at", time.time())
-#             ping()
-#             ping_resp_rcv_flag = False
-#     res = mqtt_client.check_msg()
-#     if(res == b"PINGRESP"):
-#         pingresp_rcv_flag = True
-#         print("PINGRESP")
-#     else:
-#         ping()
+        if not pingresp_rcv_flag:
+            mqtt_con_flag = False
+            print("We have not received PINGRESP so broker disconnected")
+        else:
+            print("MQTT ping at", time.time())
+            ping()
+            ping_resp_rcv_flag = False
+    res = mqtt_client.check_msg()
+    if(res == b"PINGRESP"):
+        pingresp_rcv_flag = True
+        print("PINGRESP")
+    else:
+        ping()
         res = mqtt_client.check_msg()
-#         if(res == b"PINGRESP"):
-#             pingresp_rcv_flag = True
-#             print("PINGRESP")
+        if(res == b"PINGRESP"):
+            pingresp_rcv_flag = True
+            print("PINGRESP")
     mqtt_client.check_msg()
     
 
