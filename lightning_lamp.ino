@@ -12,12 +12,13 @@ This paragraph must be included in any redistribution.
 // How many leds in your strip?
 #define NUM_LEDS 85
 #define DATA_PIN 6
+#define LIGHTNING_PIN 5
 
 
 // Mode enumeration - if you want to add additional party or colour modes, add them here; you'll need to map some IR codes to them later; 
 // and add the modes into the main switch loop
-enum Mode { CLOUD,ACID,OFF,ON,RED,GREEN,BLUE,PURPLE,PURPLE_RAIN,FADE};
-Mode mode = OFF;
+enum Mode { CLOUD,ACID,OFF,ON,RED,GREEN,BLUE,PURPLE,PURPLE_RAIN,FADE };
+Mode mode = ON;
 Mode lastMode = ON;
 
 // Mic settings, shouldn't need to adjust these. 
@@ -42,12 +43,19 @@ CRGB leds[NUM_LEDS];
 
 void setup() { 
   // this line sets the LED strip type - refer fastLED documeantion for more details https://github.com/FastLED/FastLED
+  pinMode(LED_BUILTIN, OUTPUT);
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
   // starts the audio samples array at volume 15. 
   memset(vol, 15, sizeof(vol));
   Serial.begin(115200);
   Wire.begin(9);                // Start I2C Bus as a Slave (Device Number 9)
   Wire.onReceive(receiveEvent); // register event
+}
+
+void flicker() {
+  digitalWrite(LED_BUILTIN, random(0, 2));
+  delay(random(50,150));
+  Serial.println("Flickered");
 }
 
 
@@ -190,7 +198,7 @@ void detect_thunder() {
       case 1:
         thunderburst();
         delay(random(10,500));
-         Serial.println("Thunderburst");
+        Serial.println("Thunderburst");
         break;
        
       case 2:
@@ -204,7 +212,6 @@ void detect_thunder() {
         Serial.println("Crack");
         break;
         
-      
     }
   }
 }
@@ -255,6 +262,7 @@ void rolling(){
     }
     FastLED.show();
     delay(random(5,100));
+    flicker();
     reset();
     
   }
@@ -267,6 +275,7 @@ void crack(){
    }
    FastLED.show();
    delay(random(10,100));
+   flicker();
    reset();
 }
 
@@ -294,6 +303,7 @@ void thunderburst(){
     
     FastLED.show();
     //stay illuminated for a set time
+    flicker();
     delay(random(10,50));
     
     reset();
@@ -396,18 +406,21 @@ void constant_lightning(){
    case 1:
         thunderburst();
         delay(random(10,500));
-         Serial.println("Thunderburst");
+        Serial.println("Thunderburst");
+        // flicker();
         break;
        
       case 2:
         rolling();
         Serial.println("Rolling");
+        // flicker();
         break;
         
       case 3:
         crack();
         delay(random(50,250));
         Serial.println("Crack");
+        // flicker();
         break;
         
     
