@@ -6,13 +6,16 @@ Sound sampling code originally by Adafruit Industries.  Distributed under the BS
 This paragraph must be included in any redistribution.
 */
 
-#include <Wire.h>
 #include "FastLED.h"
+#include<SoftwareSerial.h>
+SoftwareSerial SUART(7, 8); // Use this to test when you are working in Arduino IDE,
+                            // serial does not work while plugged into USB
 
 // How many leds in your strip?
-#define NUM_LEDS 85
+#define NUM_LEDS 65
 #define DATA_PIN 6
 #define LIGHTNING_PIN 5
+#define CMDBUFFER_SIZE 32
 
 
 // Mode enumeration - if you want to add additional party or colour modes, add them here; you'll need to map some IR codes to them later; 
@@ -47,63 +50,102 @@ void setup() {
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
   // starts the audio samples array at volume 15. 
   memset(vol, 15, sizeof(vol));
-  Serial.begin(115200);
-  Wire.begin(9);                // Start I2C Bus as a Slave (Device Number 9)
-  Wire.onReceive(receiveEvent); // register event
+  Serial.begin(9600);
+  SUART.begin(9600);
 }
 
 void flicker() {
   digitalWrite(LED_BUILTIN, random(0, 2));
   delay(random(50,150));
-  Serial.println("Flickered");
+  // Serial.println("Flickered");
 }
 
+char processCharInput(char* cmdBuffer, const char c)
+{
+  //Store the character in the input buffer
+  if (c >= 32 && c <= 126) //Ignore control characters and special ascii characters
+  {
+    if (strlen(cmdBuffer) < CMDBUFFER_SIZE) 
+    { 
+      strncat(cmdBuffer, &c, 1);   //Add it to the buffer
+    }
+    else  
+    {   
+      return '\n';
+    }
+  }
+  else if ((c == 8 || c == 127) && cmdBuffer[0] != 0) //Backspace
+  {
+    cmdBuffer[strlen(cmdBuffer)-1] = 0;
+  }
 
+  return c;
+}
 
-void receiveEvent(int bytes) {
-  
+void setMode(char* received) {
+  lastMode = mode;
+  if (strcmp("ON", received) == 0) {
+    Serial.println("received ON");
+    mode = ON;
+  }
+  else if (strcmp("OFF", received) == 0) {
+    Serial.println("received OFF");
+    mode = OFF;
+  }     
+  else if (strcmp("CLOUD", received) == 0) {
+    Serial.println("received CLOUD");
+    mode = CLOUD;
+  }     
+  else if (strcmp("ACID", received) == 0) {
+    Serial.println("received ACID");
+    mode = ACID;
+  }           
+  else if (strcmp("FADE", received) == 0) {
+    Serial.println("received FADE");
+    mode = FADE;
+  }              
+  else if (strcmp("BLUE", received) == 0) {
+    Serial.println("received BLUE");
+    mode = BLUE;
+  }                 
+  else if (strcmp("RED", received) == 0) {
+    Serial.println("received RED");
+    mode = RED;
+  }                 
+  else if (strcmp("GREEN", received) == 0) {
+    Serial.println("received GREEN");
+    mode = GREEN;
+  }                 
+  else if (strcmp("PURPLE", received) == 0) {
+    Serial.println("received PURPLE");
+    mode = PURPLE_RAIN;
+  } 
+}
+
+void receiveEvent() {  
   // Here, we set the mode based on the IR signal received. Check the debug log when you press a button on your remote, and 
   // add the hex code here (you need 0x prior to each command to indicate it's a hex value)
-  while(Wire.available())
+  while(SUART.available())
    { 
-      unsigned int received = Wire.read();
-      Serial.print("Receiving IR hex: ");
-      Serial.println(received,HEX);
-      lastMode = mode;
-      switch(received){
-        case 0x40:
-          mode = ON; break;
-        case 0x41:
-          mode = OFF; break;
-        case 0xC:
-          mode = CLOUD; break;
-        case 0xD:
-          mode = ACID; break;
-        case 0xE:
-          mode = FADE; break;
-        case 0x45:
-          mode = BLUE; break;
-        case 0x59:
-          mode = GREEN; break;
-        case 0x58:
-          mode = RED; break;
-        case 0x4D:
-          mode = PURPLE; break;
-        case 0x8:
-          mode = PURPLE_RAIN; break;
-        
+      static char cmdBuffer[CMDBUFFER_SIZE] = "";
+      char c;
+      c = processCharInput(cmdBuffer, SUART.read());
+      if (c == '\n') {
+        setMode(cmdBuffer);
+        cmdBuffer[0] = 0;
       }
+      // Serial.print
+      delay(1);
    }
-
 }
  
 void loop() { 
-  
+  receiveEvent();
   // Maps mode names to code functions. 
   switch(mode){
     case CLOUD: detect_thunder();reset();break;
     case ACID: acid_cloud();reset();break;
-    case OFF:reset();break;
+    case OFF: single_colour(0);reset();break;
     case ON: constant_lightning();reset();break;
     case RED: single_colour(0);break;
     case BLUE: single_colour(160);break;
@@ -187,7 +229,7 @@ void detect_thunder() {
   
   average = (total/SAMPLES)+2;
   if(n>average){
-    Serial.println("TRIGGERED");
+    // Serial.println("TRIGGERED");
     reset();
      
    
@@ -198,18 +240,18 @@ void detect_thunder() {
       case 1:
         thunderburst();
         delay(random(10,500));
-        Serial.println("Thunderburst");
+        // Serial.println("Thunderburst");
         break;
        
       case 2:
         rolling();
-        Serial.println("Rolling");
+        // Serial.println("Rolling");
         break;
         
       case 3:
         crack();
         delay(random(50,250));
-        Serial.println("Crack");
+        // Serial.println("Crack");
         break;
         
     }
@@ -346,7 +388,6 @@ void purple_crack(){
 }
 
 void purple_thunderburst(){
-
   // this thunder works by lighting two random lengths
   // of the strand from 10-20 pixels. 
   int rs1 = random(0,NUM_LEDS/2);
@@ -382,21 +423,20 @@ void purple_constant_lightning(){
    case 1:
         purple_thunderburst();
         delay(random(10,500));
-         Serial.println("purple Thunderburst");
+        //  Serial.println("purple Thunderburst");
         break;
        
       case 2:
         purple_rolling();
-        Serial.println("purple Rolling");
+        // Serial.println("purple Rolling");
         break;
         
       case 3:
         purple_crack();
         delay(random(50,250));
-        Serial.println("purple Crack");
+        // Serial.println("purple Crack");
         break;
-        
-    
+
   }  
 }
 
@@ -406,23 +446,22 @@ void constant_lightning(){
    case 1:
         thunderburst();
         delay(random(10,500));
-        Serial.println("Thunderburst");
+        // Serial.println("Thunderburst");
         // flicker();
         break;
        
       case 2:
         rolling();
-        Serial.println("Rolling");
+        // Serial.println("Rolling");
         // flicker();
         break;
         
       case 3:
         crack();
         delay(random(50,250));
-        Serial.println("Crack");
+        // Serial.println("Crack");
         // flicker();
         break;
-        
-    
+
   }  
 }
