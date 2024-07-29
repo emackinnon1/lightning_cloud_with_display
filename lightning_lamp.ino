@@ -7,8 +7,8 @@ This paragraph must be included in any redistribution.
 */
 
 #include "FastLED.h"
-#include<SoftwareSerial.h>
-SoftwareSerial SUART(7, 8); // Use this to test when you are working in Arduino IDE,
+// #include<SoftwareSerial.h>
+// SoftwareSerial SUART(7, 8); // Use this to test when you are working in Arduino IDE,
                             // serial does not work while plugged into USB
 
 // How many leds in your strip?
@@ -20,8 +20,8 @@ SoftwareSerial SUART(7, 8); // Use this to test when you are working in Arduino 
 
 // Mode enumeration - if you want to add additional party or colour modes, add them here; you'll need to map some IR codes to them later; 
 // and add the modes into the main switch loop
-enum Mode { CLOUD,ACID,OFF,ON,RED,GREEN,BLUE,PURPLE,PURPLE_RAIN,FADE };
-Mode mode = ON;
+enum Mode { CLOUD,ACID,OFF,ON,RED,GREEN,BLUE,PURPLE,PRPL_RAIN,FADE };
+Mode mode = OFF;
 Mode lastMode = ON;
 
 // Mic settings, shouldn't need to adjust these. 
@@ -46,17 +46,17 @@ CRGB leds[NUM_LEDS];
 
 void setup() { 
   // this line sets the LED strip type - refer fastLED documeantion for more details https://github.com/FastLED/FastLED
-  pinMode(LED_BUILTIN, OUTPUT);
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
   // starts the audio samples array at volume 15. 
   memset(vol, 15, sizeof(vol));
   Serial.begin(9600);
-  SUART.begin(9600);
+  pinMode(LIGHTNING_PIN, OUTPUT);
+  // digitalWrite(LIGHTNING_PIN, 1);
+  // SUART.begin(9600);
 }
 
 void flicker() {
-  digitalWrite(LED_BUILTIN, random(0, 2));
-  delay(random(50,150));
+  digitalWrite(LIGHTNING_PIN, random(0, 2));
   // Serial.println("Flickered");
 }
 
@@ -116,26 +116,25 @@ void setMode(char* received) {
     Serial.println("received GREEN");
     mode = GREEN;
   }                 
-  else if (strcmp("PURPLE", received) == 0) {
+  else if (strcmp("PRPL_RAIN", received) == 0) {
     Serial.println("received PURPLE");
-    mode = PURPLE_RAIN;
+    mode = PRPL_RAIN;
   } 
 }
 
 void receiveEvent() {  
   // Here, we set the mode based on the IR signal received. Check the debug log when you press a button on your remote, and 
   // add the hex code here (you need 0x prior to each command to indicate it's a hex value)
-  while(SUART.available())
+  while(Serial.available())
    { 
       static char cmdBuffer[CMDBUFFER_SIZE] = "";
       char c;
-      c = processCharInput(cmdBuffer, SUART.read());
+      c = processCharInput(cmdBuffer, Serial.read());
       if (c == '\n') {
         setMode(cmdBuffer);
         cmdBuffer[0] = 0;
       }
-      // Serial.print
-      delay(1);
+      // delay(1);
    }
 }
  
@@ -151,7 +150,7 @@ void loop() {
     case BLUE: single_colour(160);break;
     case GREEN: single_colour(96);break; 
     case PURPLE: single_colour(200);break;
-    case PURPLE_RAIN: purple_constant_lightning();reset();break;
+    case PRPL_RAIN: purple_constant_lightning();reset();break;
     case FADE: colour_fade();break;
     default: detect_thunder(); reset();break; 
   }
@@ -240,18 +239,18 @@ void detect_thunder() {
       case 1:
         thunderburst();
         delay(random(10,500));
-        // Serial.println("Thunderburst");
+        Serial.println("Thunderburst");
         break;
        
       case 2:
         rolling();
-        // Serial.println("Rolling");
+        Serial.println("Rolling");
         break;
         
       case 3:
         crack();
         delay(random(50,250));
-        // Serial.println("Crack");
+        Serial.println("Crack");
         break;
         
     }
@@ -347,7 +346,6 @@ void thunderburst(){
     //stay illuminated for a set time
     flicker();
     delay(random(10,50));
-    
     reset();
     delay(random(10,50));
   }
@@ -371,7 +369,9 @@ void purple_rolling(){
       }
     }
     FastLED.show();
+    flicker();
     delay(random(5,100));
+    
     reset();
     
   }
@@ -383,6 +383,7 @@ void purple_crack(){
       leds[i] = CHSV( 200, 255, 255);  
    }
    FastLED.show();
+   flicker();
    delay(random(10,100));
    reset();
 }
@@ -411,7 +412,7 @@ void purple_thunderburst(){
     FastLED.show();
     //stay illuminated for a set time
     delay(random(10,50));
-    
+    flicker();
     reset();
     delay(random(10,50));
   }
