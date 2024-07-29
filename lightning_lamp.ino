@@ -56,6 +56,7 @@ void setup() {
 }
 
 void flicker() {
+  // this function makes the noodle LEDs flash
   digitalWrite(LIGHTNING_PIN, random(0, 2));
   // Serial.println("Flickered");
 }
