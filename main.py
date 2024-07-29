@@ -38,7 +38,7 @@ button_x = Button(14)
 button_y = Button(15)
 
 class Menu():
-    options = OrderedDict([(0, "ON"), (1, "OFF"), (2, "CLOUD"), (3, "ACID"), (4, "FADE"), (5, "BLUE"), (6, "RED"), (7, "GREEN")])
+    options = OrderedDict([(0, "ON"), (1, "OFF"), (2, "CLOUD"), (3, "ACID"), (4, "FADE"), (5, "BLUE"), (6, "RED"), (7, "GREEN"), (8, "PRPL_RAIN")])
     selection = 0
     previous_selection = None
     
@@ -53,14 +53,15 @@ class Menu():
     def render(self):
         self.clear()
         display.set_pen(WHITE)
+        menu_options = list(self.options.keys())
         display.set_pen(CYAN)
         display.rectangle(0, self.stripe_height * self.selection, WIDTH, self.stripe_height)
-        for i, option in enumerate(self.options):
-            if i == self.selection:
+        for option in self.options:
+            if option == self.selection:
                 display.set_pen(BLACK)
             else:
                 display.set_pen(CYAN)
-            display.text(self.options[i], 1, self.stripe_height * i + 5, 10, 3)
+            display.text(self.options[option], 1, self.stripe_height * option + 5, 10, 3)
             
             display.update()
 
@@ -92,7 +93,7 @@ class Menu():
         display.text(self.options[self.selection], 1, (round(HEIGHT/len(self.options)) * self.selection) + 5, 10, 3)
         display.update()
         self.transmit_selection()
-        mqtt_client.publish(mqtt_state_pub_topic, self.options[self.selection])
+        mqtt_client.publish(mqtt_state_pub_topic, self.options[self.selection], retain=True)
         
         
     def transmit_selection(self):
@@ -120,11 +121,11 @@ class Menu():
         display.update()
             
 menu = Menu()
-
+# clear()
 menu.render()
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect("WIFI_NETWORK_NAME", "{WIFI_PASSWORD}")
+wlan.connect("Who pooped in the pool", "Sonoffinan1!")
 
 while not wlan.isconnected():
     print("Connecting...")
@@ -133,14 +134,15 @@ print("Connected!")
 PING_INTERVAL = 60
 mqtt_receive_topic = "cmd/lightning_cloud/mode"
 mqtt_state_pub_topic = "state/lightning_cloud/mode"
+mqtt_status_topic = "state/lightning_cloud/connection_status"
 mqtt_con_flag = False
 pingresp_rcv_flag = True
 lock = True
 next_ping_time = 0
 
 mqtt_server = '10.0.0.91'
-mqtt_user = '{MQTT_USER}'
-mqtt_password = '{MQTT_PASSWORD}'
+mqtt_user = 'mqtt_user'
+mqtt_password = 'Sonoffinan'
 client_id = 'lightning_pico_w'
 
 mqtt_client = MQTTClient(
@@ -160,11 +162,12 @@ def mqtt_subscription_callback(topic, message):
             menu.selection = num
             menu.render_selection()
             menu.set_mode()
-            mqtt_client.publish(mqtt_state_pub_topic, msg)
+            mqtt_client.publish(mqtt_state_pub_topic, msg, retain=True)
 
     print("mqtt selection", menu.selection)
 
 mqtt_client.set_callback(mqtt_subscription_callback)
+mqtt_client.set_last_will(mqtt_status_topic, "disconnected", retain=True)
 
 def mqtt_connect():
     global next_ping_time 
@@ -180,6 +183,7 @@ def mqtt_connect():
             pingresp_rcv_flag = True
             next_ping_time = time.time() + PING_INTERVAL
             lock = False
+            mqtt_client.publish(mqtt_status_topic, "connected", retain=True)
         except Exception as e:
             print("Error in mqtt connect: [Exception]  %s: %s" % (type(e).__name__, e))
         time.sleep(0.5)
@@ -199,26 +203,26 @@ def check():
     global next_ping_time
     global mqtt_con_flag
     global pingresp_rcv_flag
-    # play with the logic here if you start having problems with MQTT connection
     if (time.time() >= next_ping_time):
         ping()
-        if not pingresp_rcv_flag:
-            mqtt_con_flag = False
-            print("We have not received PINGRESP so broker disconnected")
-        else:
-            print("MQTT ping at", time.time())
-            ping()
-            ping_resp_rcv_flag = False
-    res = mqtt_client.check_msg()
-    if(res == b"PINGRESP"):
-        pingresp_rcv_flag = True
-        print("PINGRESP")
-    else:
-        ping()
+#         print("FUCK")
+#         if not pingresp_rcv_flag:
+#             mqtt_con_flag = False
+#             print("We have not received PINGRESP so broker disconnected")
+#         else:
+#             print("MQTT ping at", time.time())
+#             ping()
+#             ping_resp_rcv_flag = False
+#     res = mqtt_client.check_msg()
+#     if(res == b"PINGRESP"):
+#         pingresp_rcv_flag = True
+#         print("PINGRESP")
+#     else:
+#         ping()
         res = mqtt_client.check_msg()
-        if(res == b"PINGRESP"):
-            pingresp_rcv_flag = True
-            print("PINGRESP")
+#         if(res == b"PINGRESP"):
+#             pingresp_rcv_flag = True
+#             print("PINGRESP")
     mqtt_client.check_msg()
     
 
