@@ -14,6 +14,7 @@ This paragraph must be included in any redistribution.
 // How many leds in your strip?
 #define NUM_LEDS 65
 #define DATA_PIN 6
+// pin for LED noodle
 #define LIGHTNING_PIN 5
 #define CMDBUFFER_SIZE 32
 
