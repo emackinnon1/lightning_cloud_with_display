@@ -51,14 +51,12 @@ void setup() {
   memset(vol, 15, sizeof(vol));
   Serial.begin(9600);
   pinMode(LIGHTNING_PIN, OUTPUT);
-  // digitalWrite(LIGHTNING_PIN, 1);
-  // SUART.begin(9600);
+  // SUART.begin(9600); // uncomment to use SUART
 }
 
 void flicker() {
-  // this function makes the noodle LEDs flash
+  // this function makes the noodle LEDs flash; add more pins if you'd like for more noodles
   digitalWrite(LIGHTNING_PIN, random(0, 2));
-  // Serial.println("Flickered");
 }
 
 char processCharInput(char* cmdBuffer, const char c)
