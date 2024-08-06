@@ -1,0 +1,37 @@
+alias: Lightning Cloud Lamp State
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - input_select.lightning_cloud_lamp_state
+    id: input_state_change
+  - platform: mqtt
+    topic: state/lightning_cloud/mode
+    id: state_change_on_mqtt
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - input_state_change
+        sequence:
+          - service: mqtt.publish
+            metadata: {}
+            data:
+              qos: "1"
+              retain: true
+              topic: cmd/lightning_cloud/mode
+              payload_template: "{{ states('input_select.lightning_cloud_lamp_state') }}"
+      - conditions:
+          - condition: trigger
+            id:
+              - state_change_on_mqtt
+        sequence:
+          - service: input_select.select_option
+            metadata: {}
+            data:
+              option: "{{ trigger.payload }}"
+            target:
+              entity_id: input_select.lightning_cloud_lamp_state
+mode: single
