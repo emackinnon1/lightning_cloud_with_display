@@ -16,6 +16,7 @@ This paragraph must be included in any redistribution.
 #define DATA_PIN 6
 // pin for LED noodle
 #define LIGHTNING_PIN 5
+// buffer for holding incoming serial messages
 #define CMDBUFFER_SIZE 32
 
 
