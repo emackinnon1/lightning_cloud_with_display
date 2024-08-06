@@ -125,7 +125,7 @@ menu = Menu()
 menu.render()
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect("Who pooped in the pool", "Sonoffinan1!")
+wlan.connect("{SSID}", "{WIFI_PASSWORD}")
 
 while not wlan.isconnected():
     print("Connecting...")
@@ -140,9 +140,9 @@ pingresp_rcv_flag = True
 lock = True
 next_ping_time = 0
 
-mqtt_server = '10.0.0.91'
-mqtt_user = 'mqtt_user'
-mqtt_password = 'Sonoffinan'
+mqtt_server = '{mqtt_server_ip}'
+mqtt_user = '{mqtt_user}'
+mqtt_password = '{mqtt_password}'
 client_id = 'lightning_pico_w'
 
 mqtt_client = MQTTClient(
